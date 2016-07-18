@@ -190,8 +190,8 @@ class KDEConnectNotify():
             self._print('  ' + prefix + notif['app_name'] + ': ' + notif['text'])
             sep = notif['text'].find('‐')
             title = notif['text'][:sep-1]
-            text = notif['text'][sep+2:]
-            self._notify(title + ' (' + notif['app_name'] + ')', text)
+            text = notif['text'][sep+2:] + '\n<i>' + notif['app_name'] + '</i>'
+            self._notify(title, text)
 
         return True
 
