@@ -115,7 +115,7 @@ class KDEConnectNotify():
             device = {
                 'name': self._dev.name,
                 'isReachable': self._dev.isReachable,
-                'isPaired': self._dev.isPaired,
+                'isTrusted': self._dev.isTrusted,
             }
         except Exception:
             return None
@@ -163,7 +163,7 @@ class KDEConnectNotify():
         else:
             summary = device['name']
 
-        if device is None or not device['isReachable'] or not device['isPaired']:
+        if device is None or not device['isReachable'] or not device['isTrusted']:
             self._print('Device is disconnected')
             self._notify(summary, 'Device is disconnected')
             return False
