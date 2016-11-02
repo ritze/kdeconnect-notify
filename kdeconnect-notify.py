@@ -50,7 +50,9 @@ class KDEConnectNotify():
         self.terminal = use_terminal
         self.libnotify = use_libnotify
         self.debug = debug
-        self.ignore = [app.lower() for app in ignore]
+
+        if ignore:
+            self.ignore = [app.lower() for app in ignore]
 
         if not self.terminal:
             self._debug('hide terminal messages')
@@ -188,7 +190,7 @@ class KDEConnectNotify():
                 self._notify(summary, 'Couldn\'t read any notification')
                 return False
 
-            if notif['app_name'].lower() not in self.ignore:
+            if not self.ignore or notif['app_name'].lower() not in self.ignore:
                 notifies.append(notif)
 
         size = len(notifies)
