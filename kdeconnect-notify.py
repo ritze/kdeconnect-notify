@@ -6,7 +6,7 @@ Display notifications of your android device over KDEConnect.
 Requires:
     pydbus
     kdeconnect
-	gi.repository
+    gi.repository
 
 @author Moritz Lüdecke
 """
@@ -33,6 +33,7 @@ class KDEConnectNotify():
     debug = None
     terminal = None
     libnotify = None
+    ignore = None
 
     _bus = None
     _dev = None
@@ -41,13 +42,15 @@ class KDEConnectNotify():
                  use_libnotify = True,
                  debug = False,
                  device_id = None,
-                 device_name = None):
+                 device_name = None,
+                 ignore = None):
         """
         Get the device id
         """
         self.terminal = use_terminal
         self.libnotify = use_libnotify
         self.debug = debug
+        self.ignore = [app.lower() for app in ignore]
 
         if not self.terminal:
             self._debug('hide terminal messages')
@@ -57,6 +60,12 @@ class KDEConnectNotify():
 
         if use_libnotify:
             Notify.init('KDEConnect Notify')
+
+        if ignore:
+            apps = ignore[0]
+            for app in ignore[1:]:
+                apps += ', ' + app
+            self._debug('ignore ' + apps)
 
         self._bus = SessionBus()
 
@@ -149,7 +158,7 @@ class KDEConnectNotify():
 
     def show_notifications(self):
         """
-        TODO: Get the current metadatas
+        Get the current metadatas
         """
         if self.device_id is None:
             self._print('No device found')
@@ -169,15 +178,8 @@ class KDEConnectNotify():
             return False
 
         ids = self._get_notification_ids()
-        size = len(ids)
 
-        self._debug('%s notifications available' % size)
-        self._print(summary + ':')
-        if size == 0:
-            self._print('  No notifications available')
-            self._notify(summary, 'No notifications available')
-            return True
-
+        notifies = []
         for id in ids:
             notif = self._get_notification(id)
 
@@ -186,6 +188,19 @@ class KDEConnectNotify():
                 self._notify(summary, 'Couldn\'t read any notification')
                 return False
 
+            if notif['app_name'].lower() not in self.ignore:
+                notifies.append(notif)
+
+        size = len(notifies)
+
+        self._debug('%s notifications available' % size)
+        self._print(summary + ':')
+        if size == 0:
+            self._print('  No notifications available')
+            self._notify(summary, 'No notifications available')
+            return True
+
+        for notif in notifies:
             prefix = id + ' ' if self.debug else ''
             self._print('  ' + prefix + notif['app_name'] + ': ' + notif['text'])
             sep = notif['text'].find('‐')
@@ -195,6 +210,7 @@ class KDEConnectNotify():
 
         return True
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=
             'Display notifications of your android device over KDEConnect.')
@@ -202,6 +218,8 @@ if __name__ == "__main__":
                         help='print debug messages')
     parser.add_argument('-d', '--device-id',
                         help='set device id')
+    parser.add_argument('-i', '--ignore', dest='APP', type=str, nargs='+',
+                        help='ignore apps')
     parser.add_argument('-n', '--device-name',
                         help='set device name')
     parser.add_argument('--hide-notifications', action='store_true',
@@ -215,7 +233,8 @@ if __name__ == "__main__":
                               not args.hide_notifications,
                               args.debug,
                               args.device_id,
-                              args.device_name)
+                              args.device_name,
+                              args.APP)
     result = notify.show_notifications()
 
     if not result:
