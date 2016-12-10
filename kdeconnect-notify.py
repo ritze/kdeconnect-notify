@@ -113,6 +113,33 @@ class KDEConnectNotify():
         if self.terminal:
             print(text)
 
+    def _merge(self, notifies):
+        merged = []
+
+        for notif in notifies:
+            found = None
+            sep = notif['text'].find('‐')
+            title = notif['app_name']
+            body = {
+                'text': notif['text'][:sep-1],
+                'desc': '<i>' + notif['text'][sep+2:] + '</i>'
+            }
+
+            for entry in merged:
+                if entry['title'] == title:
+                    found = entry
+                    break
+
+            if found:
+                found['body'].append(body)
+            else:
+                merged.append({
+                    'title': title,
+                    'body': [body]
+                })
+
+        return merged
+
     def _notify(self, summary, body, category = 'dialog-information'):
         if self.libnotify:
             notify = Notify.Notification.new(summary, body, category)
@@ -205,10 +232,22 @@ class KDEConnectNotify():
         for notif in notifies:
             prefix = id + ' ' if self.debug else ''
             self._print('  ' + prefix + notif['app_name'] + ': ' + notif['text'])
-            sep = notif['text'].find('‐')
-            title = notif['text'][:sep-1]
-            text = notif['text'][sep+2:] + '\n<i>' + notif['app_name'] + '</i>'
-            self._notify(title, text)
+
+        if not self.libnotify:
+            return True
+
+        notifies = self._merge(notifies)
+
+        for notif in notifies:
+            if len(notif['body']) == 1:
+                body = notif['body'][0]
+                text = body['text'] + '\n' + body['desc']
+            else:
+                text = ""
+                for body in notif['body']:
+                    text += body['text'] + ' - ' + body['desc'] + '\n'
+
+            self._notify(notif['title'], text)
 
         return True
 
